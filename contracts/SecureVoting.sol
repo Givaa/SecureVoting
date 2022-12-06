@@ -26,7 +26,7 @@ contract SecureVoting {
 
     // Struct che descrive il Votante.
     struct Voter {
-        string uid; // Possibile ottimizzazione con bytes32
+        string uid; // Possibile ottimizzazione con bytes32, magari indirizzo portafoglio ethereum?
         uint256 candidateIDVote;
     }
 
@@ -46,7 +46,10 @@ contract SecureVoting {
     mapping(uint256 => Candidate) candidates;
     mapping(uint256 => Voter) voters;
 
-    function addCandidate(string calldata name, string calldata party) public onlyOwner {
+    function addCandidate(string calldata name, string calldata party)
+        public
+        onlyOwner
+    {
         // Aggiorna il numero di Candidati totale.
         uint256 candidateID = numCandidates++;
         // Crea un nuovo candidato e lo aggiunge al mapping.
@@ -95,10 +98,14 @@ contract SecureVoting {
             string memory
         )
     {
-        return (
-            candidateID,
-            candidates[candidateID].name,
-            candidates[candidateID].party
-        );
+        if (candidates[candidateID].doesExist == true) {
+            return (
+                candidateID,
+                candidates[candidateID].name,
+                candidates[candidateID].party
+            );
+        } else {
+            revert("Non esiste nessun candidato con quell'ID.");
+        }
     }
 }
