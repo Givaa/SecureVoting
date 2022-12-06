@@ -26,14 +26,14 @@ contract SecureVoting {
 
     // Struct che descrive il Votante.
     struct Voter {
-        bytes32 uid; // Inseriamo Bytes32 invece del tipo String per ottimizzazione della EVM.
+        string uid; // Possibile ottimizzazione con bytes32
         uint256 candidateIDVote;
     }
 
     // Struct che descrive un Candidato.
     struct Candidate {
-        bytes32 name;
-        bytes32 party;
+        string name;
+        string party;
         // Ci assicuriamo che esista davvero.
         bool doesExist;
     }
@@ -46,7 +46,7 @@ contract SecureVoting {
     mapping(uint256 => Candidate) candidates;
     mapping(uint256 => Voter) voters;
 
-    function addCandidate(bytes32 name, bytes32 party) public onlyOwner {
+    function addCandidate(string calldata name, string calldata party) public onlyOwner {
         // Aggiorna il numero di Candidati totale.
         uint256 candidateID = numCandidates++;
         // Crea un nuovo candidato e lo aggiunge al mapping.
@@ -55,7 +55,7 @@ contract SecureVoting {
         emit AddedCandidate(candidateID);
     }
 
-    function vote(bytes32 uid, uint256 candidateID) public {
+    function vote(string calldata uid, uint256 candidateID) public {
         // Controlla se esiste il candidato per cui votiamo.
         if (candidates[candidateID].doesExist == true) {
             uint256 voterID = numVoters++; // Numero di voti totale viene aggiornato
@@ -91,8 +91,8 @@ contract SecureVoting {
         view
         returns (
             uint256,
-            bytes32,
-            bytes32
+            string memory,
+            string memory
         )
     {
         return (
