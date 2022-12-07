@@ -46,7 +46,7 @@ contract SecureVoting {
     mapping(uint256 => Candidate) candidates;
     mapping(uint256 => Voter) voters;
 
-    function addCandidate(string calldata name, string calldata party)
+    function addCandidate(string memory name, string memory party)
         public
         onlyOwner
     {
@@ -58,7 +58,7 @@ contract SecureVoting {
         emit AddedCandidate(candidateID);
     }
 
-    function vote(string calldata uid, uint256 candidateID) public {
+    function vote(string memory uid, uint256 candidateID) public {
         // Controlla se esiste il candidato per cui votiamo.
         if (candidates[candidateID].doesExist == true) {
             uint256 voterID = numVoters++; // Numero di voti totale viene aggiornato
