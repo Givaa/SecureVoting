@@ -1,3 +1,4 @@
+# bisogna aggiungere le eccezioni, la crittografia e dei controlli esterni e aggiungere dei ritorni di errori http
 from web3 import Web3
 import json
 from flask import Flask, render_template
@@ -11,7 +12,13 @@ w3 = Web3(provider)
 # Controlli principali per Ganache
 print(w3.isConnected())
 print(w3.clientVersion)
-print(w3.eth.get_balance(w3.eth._get_accounts()[0]))
+
+firstAccount = w3.eth._get_accounts()[0]
+print(w3.eth.get_balance(firstAccount))
+
+secondAccount = w3.eth._get_accounts()[1]
+print(w3.eth.get_balance(secondAccount))
+print(len(w3.eth._get_accounts()))
 
 # Carica il json e prende l'ABI
 with open("SecureVoting.json") as f:
@@ -19,36 +26,26 @@ with open("SecureVoting.json") as f:
 abi = info_json["abi"]
 
 # Indirizzo dello smart contract e inizializzazione dell'oggetto
-secureVotingAddress = "0x336C1bedF196990E4F479b72b7576A69487c182e"
+secureVotingAddress = "0x511c95B2cf0d2b24b7eD948dAC1f9b27A2b1cE1d"
 contract = w3.eth.contract(address=secureVotingAddress, abi=abi)
 
-numberOfVotes = contract.functions.getNumOfVoters().call()
-
-
-tx_hash = contract.functions.addCandidate('Gerardo', 'Lega').buildTransaction({'gasPrice': w3.eth.gas_price})
-{
-    'to': '0x6Bc272FCFcf89C14cebFC57B8f1543F5137F97dE',
-    'data': '0x81752d63',
-    'value': 0,
-    'gas': 43242,
-    'gasPrice': w3.eth.gas_price
-}
+# contract.functions.addCandidate('Gerardo', 'Lega').transact({"from": firstAccount})
 
 print(contract.functions.getNumOfCandidates().call())
 
-@app.route("/")
-def starting():
-    return render_template('index.html', variable=numberOfVotes)
+@app.route('/isConnected')
+def isConnected():
+    return str(w3.isConnected())
 
 @app.route('/voting/numberOfCandidates')
 def getNumOfCandidates():
-    numofcandidates = contract.functions.getNumOfVoters().call()
+    numofcandidates = contract.functions.getNumOfCandidates().call()
     return "Numero di candidati: " + str(numofcandidates)
 
 @app.route('/voting/addCandidate/<name>/<party>')
 def addCandidate(name, party):
     try:
-        contract.functions.addCandidate(name, party).transact()
+        contract.functions.addCandidate(name, party).transact({"from": firstAccount})
         return "Candidato " + name + " per il partito " + party + " aggiunto!"
     except:
         return "Errore nell'aggiunta del candidato!"
@@ -57,6 +54,18 @@ def addCandidate(name, party):
 def getCandidate(candidateID):
     candid, candname, candparty = contract.functions.getCandidate(candidateID).call()
     return "Il nome del candidato è: " + str(candname)
+
+@app.route('/vote/<int:uid>/<int:candidateID>')
+def vote(uid, candidateID):
+    # da modificare quando arriva l'RFID
+    try:
+        contract.functions.vote(str(uid), candidateID).transact({"from": firstAccount})
+        return str(contract.functions.totalVotes(candidateID).call())
+    except:
+        return "Votazione fallita"
+
+if __name__ == '__main__':
+    app.run(host = '0.0.0.0', port=222)
 
 
 
