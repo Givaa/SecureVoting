@@ -67,7 +67,7 @@ def vote():
     return str(contract.functions.totalVotes(int(candidateid)).call())
 
 if __name__ == '__main__':
-    app.run(ssl_context= (), host = '0.0.0.0', port=222)
+    app.run(ssl_context= ('cert/certificate.pem', 'cert/privatekey.pem'), host= '0.0.0.0', port=222)
 
 
 
