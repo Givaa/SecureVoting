@@ -8,10 +8,10 @@
 #define RED_LED 27
 #define LED_TIMING 1000
 
-const char* ssid = "CtOS";
-const char* password = "876543210";
+const char* ssid = "OnePlus 8T";
+const char* password = "lello555";
 
-String serverName = "http://192.168.1.153:222";
+String serverName = "http://192.168.73.167:222";
 
 int firstLastState = LOW, secondLastState = LOW, thirdLastState = LOW, fourthLastState = LOW;
 int firstCurrentState, secondCurrentState, thirdCurrentState, fourthCurrentState;
@@ -63,10 +63,8 @@ bool isConnectedGanache(){
 
       String serverPath = serverName + "/isConnected";
       
-      // Your Domain name with URL path or IP address with path
       http.begin(serverPath.c_str());
       
-      // Send HTTP GET request
       int httpResponseCode = http.GET();
       
       if (httpResponseCode == 200) {
@@ -78,9 +76,10 @@ bool isConnectedGanache(){
       else {
         Serial.print("Error code: ");
         Serial.println(httpResponseCode);
-      }
+      } 
   
       http.end();
+
     }
     else {
       Serial.println("WiFi Disconnected");
@@ -91,7 +90,6 @@ bool isConnectedGanache(){
 
 void vote(){
 
-
   firstCurrentState = digitalRead(FIRST_BUTTON);
   secondCurrentState = digitalRead(SECOND_BUTTON);
   thirdCurrentState = digitalRead(THIRD_BUTTON);
@@ -99,14 +97,14 @@ void vote(){
 
   // parte un voto a cazzo all'inzio, da fixare
   
-  if (firstLastState == LOW && firstCurrentState == HIGH)
-    voteFor(0, 0);
-  else if (secondLastState == LOW && secondCurrentState == HIGH)
-    voteFor(0, 1);
-  else if (thirdLastState == LOW && thirdCurrentState == HIGH)
-    voteFor(0, 2);
-  else if (fourthLastState == LOW && fourthCurrentState == HIGH)
-    voteFor(0, 3);
+  if (firstLastState == HIGH && firstCurrentState == LOW)
+    voteForPost(0, 0);
+  else if (secondLastState == HIGH && secondCurrentState == LOW)
+    voteForPost(0, 1);
+  else if (thirdLastState == HIGH && thirdCurrentState == LOW)
+    voteForPost(0, 2);
+  else if (fourthLastState == HIGH && fourthCurrentState == LOW)
+    voteForPost(0, 3);
 
   firstLastState = firstCurrentState;
   secondLastState = secondCurrentState;
@@ -114,15 +112,19 @@ void vote(){
   fourthLastState = fourthCurrentState;
 }
 
-void voteFor(int uid, int candidateID){
+void voteForPost(int uid, int candidateID){
   if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;
 
-      String serverPath = serverName + "/vote/" + uid + "/" + candidateID;
-    
+      String serverPath = serverName + "/vote";
+
       http.begin(serverPath.c_str());
-      
-      int httpResponseCode = http.GET();
+
+      http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+      String httpRequestData = "uid=" + String(uid) + "&candidateID=" + String(candidateID);
+
+      int httpResponseCode = http.POST(httpRequestData);
       
       if (httpResponseCode == 200) {
         String payload = http.getString();

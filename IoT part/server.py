@@ -1,7 +1,8 @@
 # bisogna aggiungere le eccezioni, la crittografia e dei controlli esterni e aggiungere dei ritorni di errori http
 from web3 import Web3
 import json
-from flask import Flask, render_template
+from flask import Flask, request
+import sys
 
 app = Flask(__name__, template_folder='html')
 
@@ -37,12 +38,12 @@ print(contract.functions.getNumOfCandidates().call())
 def isConnected():
     return str(w3.isConnected())
 
-@app.route('/voting/numberOfCandidates')
+@app.route('/voting/numberOfCandidates', methods = ['GET'])
 def getNumOfCandidates():
     numofcandidates = contract.functions.getNumOfCandidates().call()
     return "Numero di candidati: " + str(numofcandidates)
 
-@app.route('/voting/addCandidate/<name>/<party>')
+@app.route('/voting/addCandidate/<name>/<party>', methods = ['POST'])
 def addCandidate(name, party):
     try:
         contract.functions.addCandidate(name, party).transact({"from": firstAccount})
@@ -50,22 +51,23 @@ def addCandidate(name, party):
     except:
         return "Errore nell'aggiunta del candidato!"
 
-@app.route('/voting/getCandidate/<int:candidateID>')
+@app.route('/voting/getCandidate/<int:candidateID>', methods = ['POST'])
 def getCandidate(candidateID):
     candid, candname, candparty = contract.functions.getCandidate(candidateID).call()
     return "Il nome del candidato è: " + str(candname)
 
-@app.route('/vote/<int:uid>/<int:candidateID>')
-def vote(uid, candidateID):
+@app.route('/vote', methods = ['POST'])
+def vote():
     # da modificare quando arriva l'RFID
-    try:
-        contract.functions.vote(str(uid), candidateID).transact({"from": firstAccount})
-        return str(contract.functions.totalVotes(candidateID).call())
-    except:
-        return "Votazione fallita"
+    payload = request.get_data().decode('utf-8').split('&')
+    uid, candidateid = payload
+    uid = uid.split('=')[1]
+    candidateid = candidateid.split('=')[1]
+    contract.functions.vote(str(uid), int(candidateid)).transact({"from": firstAccount})
+    return str(contract.functions.totalVotes(int(candidateid)).call())
 
 if __name__ == '__main__':
-    app.run(host = '0.0.0.0', port=222)
+    app.run(ssl_context= (), host = '0.0.0.0', port=222)
 
 
 
