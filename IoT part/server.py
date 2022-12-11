@@ -3,8 +3,18 @@ from web3 import Web3
 import json
 from flask import Flask, request
 import sys
+import mysql.connector as sqlconnect
 
-app = Flask(__name__, template_folder='html')
+DataBase = sqlconnect.connect(
+    host="localhost",
+    user="root",
+    password="Votazioneseggio2022!",
+    database="Seggio"
+)
+
+Cursor = DataBase.cursor()
+
+app = Flask(__name__)
 
 # Inizializzo la connessione a Ganache
 provider = Web3.HTTPProvider('http://127.0.0.1:7545')
@@ -14,12 +24,9 @@ w3 = Web3(provider)
 print(w3.isConnected())
 print(w3.clientVersion)
 
+# da cancellare
 firstAccount = w3.eth._get_accounts()[0]
-print(w3.eth.get_balance(firstAccount))
-
 secondAccount = w3.eth._get_accounts()[1]
-print(w3.eth.get_balance(secondAccount))
-print(len(w3.eth._get_accounts()))
 
 # Carica il json e prende l'ABI
 with open("SecureVoting.json") as f:
@@ -27,10 +34,9 @@ with open("SecureVoting.json") as f:
 abi = info_json["abi"]
 
 # Indirizzo dello smart contract e inizializzazione dell'oggetto
+# da fare meglio per prendere indirizzo smart contract dinamico
 secureVotingAddress = "0x511c95B2cf0d2b24b7eD948dAC1f9b27A2b1cE1d"
 contract = w3.eth.contract(address=secureVotingAddress, abi=abi)
-
-# contract.functions.addCandidate('Gerardo', 'Lega').transact({"from": firstAccount})
 
 print(contract.functions.getNumOfCandidates().call())
 
@@ -58,13 +64,30 @@ def getCandidate(candidateID):
 
 @app.route('/vote', methods = ['POST'])
 def vote():
-    # da modificare quando arriva l'RFID
     payload = request.get_data().decode('utf-8').split('&')
-    uid, candidateid = payload
+    uid, RFID, candidateid = payload
     uid = uid.split('=')[1]
     candidateid = candidateid.split('=')[1]
-    contract.functions.vote(str(uid), int(candidateid)).transact({"from": firstAccount})
-    return str(contract.functions.totalVotes(int(candidateid)).call())
+    RFID = RFID.split('=')[1]
+    for account in w3.eth._get_accounts():
+        if account == uid:
+            actualAccount = account
+    Cursor.execute("SELECT alreadyVoted FROM Votante WHERE RFID = (%s)", (RFID,))
+    for element in Cursor.fetchone():
+        result = element
+    if result == '0x01':
+        return "Already Voted!"
+    else:
+        contract.functions.vote(str(uid), int(candidateid)).transact({"from": actualAccount})
+        return str(contract.functions.totalVotes(int(candidateid)).call())
+@app.route('/authenticate', methods = ['POST'])
+def authenticate():
+    payload = request.get_data().decode('utf-8')
+    RFID = payload.split('=')[1]
+    Cursor.execute("SELECT BlockchainID FROM Votante WHERE RFID = (%s)", (RFID,))
+    for element in Cursor.fetchone():
+        actualBlockchainID = element
+    return str(actualBlockchainID)
 
 if __name__ == '__main__':
     app.run(ssl_context= ('cert/certificate.pem', 'cert/privatekey.pem'), host= '0.0.0.0', port=222)

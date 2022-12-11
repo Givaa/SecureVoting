@@ -1,6 +1,10 @@
+// e la crittografia? basta soltanto questo?
+
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <SPI.h>
+#include <MFRC522.h>
 #define FIRST_BUTTON 15
 #define SECOND_BUTTON 13
 #define THIRD_BUTTON 21
@@ -8,15 +12,23 @@
 #define GREEN_LED 26
 #define RED_LED 27
 #define LED_TIMING 1000
+#define SS_PIN  5 
+#define RST_PIN 4 
 
-const char* ssid = "OnePlus 8T";
-const char* password = "lello555";
+MFRC522 rfid(SS_PIN, RST_PIN);
 
-String serverName = "https://192.168.73.167:222";
+const char* ssid = "CtOS";
+const char* password = "876543210";
 
-WiFiClientSecure client;
+String serverName = "https://192.168.1.155:222";
 
-const char* root_ca = \
+String actualBlockchainID, actualRFID;
+
+bool state = true;
+
+//WiFiClientSecure client;
+
+/* const char* root_ca = \
 "-----BEGIN CERTIFICATE-----\n" \
 "MIIFqDCCA5ACCQCPfRsdFhNh+zANBgkqhkiG9w0BAQsFADCBlTELMAkGA1UEBhMC\n" \
 "SVQxETAPBgNVBAgMCEF2ZWxsaW5vMREwDwYDVQQHDAhBdmVsbGlubzEVMBMGA1UE\n" \
@@ -49,7 +61,7 @@ const char* root_ca = \
 "WmiK4TYDPBJ6wtW99yZ8q0/kBpw2SL+JWwa0gabx/oTqRQJy9n8jYQV6wY21kKkg\n" \
 "eXToLH0iVick1S9p7zEM3yqLZBtGIekUUUPY8ZKccl3w+nXOrURPS9I97cX0AU4I\n" \
 "AxGz6Lnx0X5moDFG\n"
-"-----END CERTIFICATE-----\n";
+"-----END CERTIFICATE-----\n";*/
        
 
 int firstLastState = LOW, secondLastState = LOW, thirdLastState = LOW, fourthLastState = LOW;
@@ -61,12 +73,17 @@ void setup() {
   WiFi.begin(ssid, password);
   Serial.println("Connecting");
   while(WiFi.status() != WL_CONNECTED) {
+    digitalWrite(RED_LED, HIGH);
     delay(500);
     Serial.print(".");
+    digitalWrite(RED_LED, LOW);
   }
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
-  client.setCACert(root_ca);
+  digitalWrite(GREEN_LED, HIGH);
+  delay(LED_TIMING);
+  digitalWrite(GREEN_LED, LOW);
+  //client.setCACert(root_ca);
   Serial.println(WiFi.localIP());
 
   pinMode(FIRST_BUTTON, INPUT_PULLUP);
@@ -75,6 +92,9 @@ void setup() {
   pinMode(FOURTH_BUTTON, INPUT_PULLUP);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
+
+  SPI.begin();
+  rfid.PCD_Init();
 
   //controlla connessione con il webserver Flask e controlla che Flask sia connesso correttamente con Ganache
   if(isConnectedGanache() == true){
@@ -92,9 +112,11 @@ void setup() {
 }
 
 void loop() {
-  //authenticate();
-
-  vote();
+  if(state){
+    authenticate();
+  } else {
+    vote(actualBlockchainID);
+  } 
 }
 
 bool isConnectedGanache(){
@@ -103,7 +125,7 @@ bool isConnectedGanache(){
 
       String serverPath = serverName + "/isConnected";
       
-      http.begin(serverPath.c_str(), root_ca);
+      http.begin(serverPath.c_str()/*, root_ca*/);
       
       int httpResponseCode = http.GET();
       
@@ -128,41 +150,40 @@ bool isConnectedGanache(){
     return false;
 }
 
-void vote(){
+void vote(String BlockchainID){
 
   firstCurrentState = digitalRead(FIRST_BUTTON);
   secondCurrentState = digitalRead(SECOND_BUTTON);
   thirdCurrentState = digitalRead(THIRD_BUTTON);
   fourthCurrentState = digitalRead(FOURTH_BUTTON);
-
-  // parte un voto a cazzo all'inzio, da fixare
   
   if (firstLastState == HIGH && firstCurrentState == LOW)
-    voteForPost(0, 0);
+    voteForPost(actualBlockchainID, 0);
   else if (secondLastState == HIGH && secondCurrentState == LOW)
-    voteForPost(0, 1);
+    voteForPost(actualBlockchainID, 1);
   else if (thirdLastState == HIGH && thirdCurrentState == LOW)
-    voteForPost(0, 2);
+    voteForPost(actualBlockchainID, 2);
   else if (fourthLastState == HIGH && fourthCurrentState == LOW)
-    voteForPost(0, 3);
+    voteForPost(actualBlockchainID, 3);
 
   firstLastState = firstCurrentState;
   secondLastState = secondCurrentState;
   thirdLastState = thirdCurrentState;
   fourthLastState = fourthCurrentState;
+
 }
 
-void voteForPost(int uid, int candidateID){
+void voteForPost(String uid, int candidateID){
   if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;
 
       String serverPath = serverName + "/vote";
 
-      http.begin(serverPath.c_str(), root_ca);
+      http.begin(serverPath.c_str()/*, root_ca*/);
 
       http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-      String httpRequestData = "uid=" + String(uid) + "&candidateID=" + String(candidateID);
+      String httpRequestData = "uid=" + uid + "&RFID=" + actualRFID + "&candidateID=" + String(candidateID);
 
       int httpResponseCode = http.POST(httpRequestData);
       
@@ -172,6 +193,7 @@ void voteForPost(int uid, int candidateID){
         digitalWrite(GREEN_LED, HIGH);
         delay(LED_TIMING);
         digitalWrite(GREEN_LED, LOW);
+        state = true;
       }
       else {
         Serial.print("Error code: ");
@@ -188,6 +210,67 @@ void voteForPost(int uid, int candidateID){
     }
 }
 
-void authenticate(long RFID){
-     //da fare quando arriva l'RFID 
+void authenticate(){
+    if (rfid.PICC_IsNewCardPresent()) { // leggi un nuovo tag RFID
+      if (rfid.PICC_ReadCardSerial()) { 
+        char RFID[8] = ""; 
+
+        takeRFIDtoCharArray(rfid.uid.uidByte, rfid.uid.size, RFID);
+
+        actualRFID = ""; 
+
+        for(int i = 0; i < 8; i++){
+            actualRFID += RFID[i];
+        }
+
+        if(WiFi.status()== WL_CONNECTED){
+          HTTPClient http;
+
+          String serverPath = serverName + "/authenticate";
+
+          http.begin(serverPath.c_str()/*, root_ca*/);
+
+          http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+          String httpRequestData = "RFID=" + actualRFID;
+
+          int httpResponseCode = http.POST(httpRequestData);
+      
+          if (httpResponseCode == 200) {
+            String payload = http.getString();
+            Serial.println(payload);
+            actualBlockchainID = payload;
+            digitalWrite(GREEN_LED, HIGH);
+            delay(LED_TIMING);
+            digitalWrite(GREEN_LED, LOW);
+            state = false;
+            return;
+          } else {
+            Serial.print("Error code: ");
+            Serial.println(httpResponseCode);
+            digitalWrite(RED_LED, HIGH);
+            delay(LED_TIMING);
+            digitalWrite(RED_LED, LOW);
+            exit(-1);
+          }
+          http.end();
+        } else {
+        Serial.println("WiFi Disconnected");
+        }
+        rfid.PICC_HaltA();
+        rfid.PCD_StopCrypto1(); 
+      }
+  }
+}
+
+void takeRFIDtoCharArray(byte array[], unsigned int len, char buffer[])
+{
+   for (unsigned int i = 0; i < len; i++)
+   {
+      byte nib1 = (array[i] >> 4) & 0x0F;
+      byte nib2 = (array[i] >> 0) & 0x0F;
+      buffer[i*2+0] = nib1  < 0xA ? '0' + nib1  : 'A' + nib1  - 0xA;
+      buffer[i*2+1] = nib2  < 0xA ? '0' + nib2  : 'A' + nib2  - 0xA;
+   }
+   buffer[len*2] = '\0';
 }
