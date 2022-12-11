@@ -75,10 +75,13 @@ def vote():
     Cursor.execute("SELECT alreadyVoted FROM Votante WHERE RFID = (%s)", (RFID,))
     for element in Cursor.fetchone():
         result = element
-    if result == '0x01':
+    print(element, sys.stderr)
+    if result == 1:
         return "Already Voted!"
     else:
         contract.functions.vote(str(uid), int(candidateid)).transact({"from": actualAccount})
+        Cursor.execute("UPDATE Votante SET alreadyVoted = 1 WHERE RFID = (%s)", (RFID,))
+        DataBase.commit()
         return str(contract.functions.totalVotes(int(candidateid)).call())
 @app.route('/authenticate', methods = ['POST'])
 def authenticate():

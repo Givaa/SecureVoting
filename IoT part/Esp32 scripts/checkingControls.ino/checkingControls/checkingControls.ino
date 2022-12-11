@@ -170,7 +170,6 @@ void vote(String BlockchainID){
   secondLastState = secondCurrentState;
   thirdLastState = thirdCurrentState;
   fourthLastState = fourthCurrentState;
-
 }
 
 void voteForPost(String uid, int candidateID){
@@ -190,9 +189,15 @@ void voteForPost(String uid, int candidateID){
       if (httpResponseCode == 200) {
         String payload = http.getString();
         Serial.println(payload);
-        digitalWrite(GREEN_LED, HIGH);
-        delay(LED_TIMING);
-        digitalWrite(GREEN_LED, LOW);
+        if(!payload.equals("Already Voted!")){
+          digitalWrite(GREEN_LED, HIGH);
+          delay(LED_TIMING);
+          digitalWrite(GREEN_LED, LOW);
+        } else {
+          digitalWrite(RED_LED, HIGH);
+          delay(LED_TIMING);
+          digitalWrite(RED_LED, LOW);          
+        }
         state = true;
       }
       else {
