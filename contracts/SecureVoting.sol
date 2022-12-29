@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity >=0.7.0;
 
 contract SecureVoting {
     // Questo evento serve per loggare quando viene aggiunto un nuovo candidato
@@ -46,10 +46,7 @@ contract SecureVoting {
     mapping(uint256 => Candidate) candidates;
     mapping(uint256 => Voter) voters;
 
-    function addCandidate(string memory name, string memory party)
-        public
-        onlyOwner
-    {
+    function addCandidate(string memory name, string memory party) public onlyOwner {
         // Aggiorna il numero di Candidati totale.
         uint256 candidateID = numCandidates++;
         // Crea un nuovo candidato e lo aggiunge al mapping.

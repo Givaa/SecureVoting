@@ -52,7 +52,7 @@
   "sourceMap": "66:352:0:-:0;;;113:10;90:33;;;;;;;;;;;;;;;;;;;;66:352;;;;;;;;;;;;;;;;",
   "deployedSourceMap": "66:352:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;127:36;;;:::i;:::-;;;;;;;;;;;;;;;;;;;90:33;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;313:103;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;;127:36;;;;:::o;90:33::-;;;;;;;;;;;;:::o;313:103::-;225:5;;;;;;;;;;211:19;;:10;:19;;;196:101;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;402:9:::1;375:24;:36;;;;313:103:::0;:::o",
   "source": "// SPDX-License-Identifier: MIT\npragma solidity >=0.4.22 <0.8.0;\n\ncontract Migrations {\n  address public owner = msg.sender;\n  uint public last_completed_migration;\n\n  modifier restricted() {\n    require(\n      msg.sender == owner,\n      \"This function is restricted to the contract's owner\"\n    );\n    _;\n  }\n\n  function setCompleted(uint completed) public restricted {\n    last_completed_migration = completed;\n  }\n}\n",
-  "sourcePath": "/Users/giovannirapa/Documents/GitHub/SecureVoting/contracts/Migrations.sol",
+  "sourcePath": "/Users/antoniocacciapuoti/SecureVoting/contracts/Migrations.sol",
   "ast": {
     "absolutePath": "project:/contracts/Migrations.sol",
     "exportedSymbols": {
@@ -891,12 +891,12 @@
     "5777": {
       "events": {},
       "links": {},
-      "address": "0x4043935b969601caE5DD5EfEE132BAFf956942B2",
-      "transactionHash": "0xdaade011de3fe57d2b7d81631ffd17f11d4eb3e7de1928115fb4e54842032e75"
+      "address": "0xA1d9cb8C58dD50241c9938fA62B54ac131Ce3305",
+      "transactionHash": "0x748a5ec57041bce790c93c33ade27ed96b78dc609e0a2313a72e3d3ced2f1872"
     }
   },
   "schemaVersion": "3.4.11",
-  "updatedAt": "2022-12-07T19:48:28.516Z",
+  "updatedAt": "2022-12-15T14:45:31.778Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
