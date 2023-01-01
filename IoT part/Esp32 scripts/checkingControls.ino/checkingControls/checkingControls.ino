@@ -1,5 +1,3 @@
-// e la crittografia? basta soltanto questo?
-
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
@@ -17,10 +15,10 @@
 
 MFRC522 rfid(SS_PIN, RST_PIN);
 
-const char* ssid = "CtOS";
-const char* password = "876543210";
+const char* ssid = "fast life";
+const char* password = "012345678";
 
-String serverName = "https://192.168.1.155:222";
+String serverName = "https://192.168.1.149:222";
 
 String actualBlockchainID, actualRFID;
 
