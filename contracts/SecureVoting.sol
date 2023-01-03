@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0;
+pragma solidity >=0.8.0;
 
 contract SecureVoting {
     // Questo evento serve per loggare quando viene aggiunto un nuovo candidato
@@ -34,8 +34,18 @@ contract SecureVoting {
     struct Candidate {
         string name;
         string party;
+        // uint256 uid;
         // Ci assicuriamo che esista davvero.
         bool doesExist;
+    }
+
+    struct CandidateDao {
+
+        string name;
+        string party;
+        uint256 uid;
+        uint256 votes;
+
     }
 
     // Variabili di stato che vengono salvate sulla Blockchain per il numero di voti totali e il numero di candidati totale.
@@ -46,7 +56,10 @@ contract SecureVoting {
     mapping(uint256 => Candidate) candidates;
     mapping(uint256 => Voter) voters;
 
-    function addCandidate(string memory name, string memory party) public onlyOwner {
+    function addCandidate(string memory name, string memory party)
+        public
+        onlyOwner
+    {
         // Aggiorna il numero di Candidati totale.
         uint256 candidateID = numCandidates++;
         // Crea un nuovo candidato e lo aggiunge al mapping.
@@ -85,7 +98,19 @@ contract SecureVoting {
         return numVoters;
     }
 
+    // Ritorna tutti i candidati
+    function getCandidates() public view returns (CandidateDao[] memory) {
+        CandidateDao[] memory toBeRet = new CandidateDao[](numCandidates);
+        for (uint256 i = 0; i < numCandidates; i++) {
+            Candidate memory tmp = candidates[i];
+            CandidateDao memory toAdd = CandidateDao(tmp.name, tmp.party, i, totalVotes(i));
+            toBeRet[i] = toAdd;
+        }
+        return toBeRet;
+    }
+
     // Ritorna tutte le informazioni su un Candidato.
+    // da modificare
     function getCandidate(uint256 candidateID)
         public
         view
@@ -104,5 +129,34 @@ contract SecureVoting {
         } else {
             revert("Non esiste nessun candidato con quell'ID.");
         }
+    }
+
+    function hasAlreadyVoted(string memory voterID)
+        public
+        view
+        returns (bool)
+    {
+        for(uint256 i = 0; i < numVoters; i++){
+            if(strcmp(voters[i].uid, voterID) == true){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function memcmp(bytes memory a, bytes memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return (a.length == b.length) && (keccak256(a) == keccak256(b));
+    }
+
+    function strcmp(string memory a, string memory b)
+        internal
+        pure
+        returns (bool)
+    {
+        return memcmp(bytes(a), bytes(b));
     }
 }

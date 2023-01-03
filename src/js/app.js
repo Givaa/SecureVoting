@@ -1,47 +1,14 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js'
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js'
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCkGV1K6geqgdi3eYEGaDlKmKoVsK8IGAo",
-  authDomain: "voting-68398.firebaseapp.com",
-  projectId: "voting-68398",
-  storageBucket: "voting-68398.appspot.com",
-  messagingSenderId: "299619990480",
-  appId: "1:299619990480:web:0faa7193a3ab1860f857d5"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const modalAvvisi = new bootstrap.Modal('#modalAvvisi');
+const addCandidateModal = new bootstrap.Modal('#addCandidateModal');
 
 const App = {
 
-  signedInUser: null,
   web3Provider: null,
   contracts: {},
+  account: null,
 
   init: async function () {
-
-    // to be deleted
-    signInWithEmailAndPassword(auth, 'test@login.it', 'ciao1234').then(userCredential => {
-      // Signed in 
-      const user = userCredential.user;
-      // ...
-    }).catch((error) => {
-      console.log(error);
-    });
-
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        App.signedInUser = user;
-        console.log('signed in!');
-        return await App.initWeb3();
-      } else {
-        // User is signed out
-        console.log('nope');
-      }
-    });
-
-
+    return await App.initWeb3();
   },
 
   initWeb3: async function () {
@@ -67,38 +34,158 @@ const App = {
     }
     web3 = new Web3(App.web3Provider);
 
+    web3.eth.getAccounts(async function (error, accounts) {
+      if (error) {
+        console.log(error);
+      }
+      App.account = accounts[0];
+    });
+
     return App.initContract();
+
   },
 
   initContract: function () {
 
-    $.getJSON('SecureVoting.json', function (data) {
+    $.getJSON('SecureVoting.json', async function (data) {
       // Get the necessary contract artifact file and instantiate it with @truffle/contract
       var SecureVotingArtifact = data;
-      App.contracts.SecureVoting = TruffleContract(SecureVotingArtifact);
+      App.contracts.SecureVoting = await TruffleContract(SecureVotingArtifact);
 
       // Set the provider for our contract
-      App.contracts.SecureVoting.setProvider(App.web3Provider);
+      await App.contracts.SecureVoting.setProvider(App.web3Provider);
 
-      // Use our contract to retrieve and mark the adopted pets
-      // DO SOMETHING
+      App.getCandidates().then(candidates => {
+        App.pupulateTable(candidates);
+        App.checkIfContractCreator();
+      });
+
+
     });
 
-    console.log(App.signedInUser);
+  },
 
-    return App.bindEvents();
+  pupulateTable: function (candidates) {
+
+    const candidatesTableBody = $('#candidatesTableBody');
+
+    for (const candidate of candidates) {
+
+      const nameCell = $('<td/>').html(candidate.name)
+      const partyCell = $('<td/>').html(candidate.party);
+      const votesCell = $('<td/>').html(candidate.votes).attr('class', 'show-if-admin');
+      const actionCell = $('<td/>')
+        .attr('class', 'text-end')
+        .html(
+          $('<button/>')
+            .attr('class', 'btn btn-success btn-adopt')
+            .attr('type', 'button')
+            .html('<i class="bi bi-check-circle-fill"></i> Votami!')
+            .attr('data-candidateid', candidate.uid)
+        );
+
+      const newRow = $('<tr/>').append(nameCell, partyCell, votesCell, actionCell);
+
+      candidatesTableBody.append(newRow);
+
+    }
+
+    App.bindEvents();
+
   },
 
   bindEvents: function () {
     $(document).on('click', '.btn-adopt', App.handleVote);
+    $('#addCandidateForm').on('submit', App.handleAddCandidate);
+    $(document).on('click', '#dismissModalAvvisi', App.hideAlertModal);
+  },
+
+  handleAddCandidate: function (event) {
+
+    event.preventDefault();
+
+    addCandidateModal.hide();
+
+    let nomeCandidato = $('#nomeCandidatoModal').val();
+    let partitoCandidato = $('#partitoCandidatoModal').val();
+
+    App.contracts.SecureVoting.deployed().then(function (instance) {
+      return instance.addCandidate(nomeCandidato, partitoCandidato, { from: App.account });
+    }).then(function (result) {
+      App.showAlertModal('hai aggiunto un candidato!');
+    }).catch(function (err) {
+      console.log(err.message);
+    });
+
   },
 
   handleVote: function (event) {
+
     event.preventDefault();
 
-    var candidateId = parseInt($(event.target).data('id'));
+    let candidateId = parseInt($(event.target).data('candidateid'));
+    App.voteCandidate(candidateId);
 
-    console.log('oh yeah');
+  },
+
+  voteCandidate: async function (candidateId) {
+
+    if (await App.checkHasAlreadyVoted()) {
+      App.showAlertModal('hai già votato');
+    } else {
+
+      App.contracts.SecureVoting.deployed().then(function (instance) {
+        return instance.vote(App.account.toLocaleLowerCase(), candidateId, { from: App.account });
+      }).then(function (result) {
+        App.showAlertModal('hai votato!')
+      }).catch(function (err) {
+        console.log(err.message);
+      });
+
+    }
+
+  },
+
+  getCandidates: async function () {
+
+    return new Promise((resolve) => {
+      App.contracts.SecureVoting.deployed().then(function (instance) {
+        resolve(instance.getCandidates.call());
+      }).catch(function (err) {
+        console.log(err.message);
+      });
+    });
+
+  },
+
+  checkHasAlreadyVoted: function () {
+
+    return new Promise(resolve => {
+      App.contracts.SecureVoting.deployed().then(function (instance) {
+        resolve(instance.hasAlreadyVoted.call(App.account));
+      }).catch(function (err) {
+        console.log(err.message);
+      });
+    });
+
+  },
+
+  checkIfContractCreator: function () {
+    if (App.account.toLocaleLowerCase() == '0x7cb3139f3e40d335efb17ab0081e18885be58265') {
+      $('.show-if-admin').show();
+    } else {
+      $('.show-if-admin').hide();
+    }
+  },
+
+  showAlertModal: function (text) {
+    $('#textAvviso').html(text);
+    modalAvvisi.show();
+  },
+
+  hideAlertModal: function () {
+    modalAvvisi.hide();
+    window.location.reload();
   }
 
 };
@@ -106,5 +193,9 @@ const App = {
 $(function () {
   $(window).on('load', function () {
     App.init();
+    window.ethereum.on('accountsChanged', function (accounts) {
+      App.account = accounts[0];
+      App.checkIfContractCreator();
+    })
   });
 });
