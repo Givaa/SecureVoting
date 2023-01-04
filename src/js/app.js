@@ -135,7 +135,7 @@ const App = {
     } else {
 
       App.contracts.SecureVoting.deployed().then(function (instance) {
-        return instance.vote(App.account.toLocaleLowerCase(), candidateId, { from: App.account });
+        return instance.vote(App.account, candidateId, { from: App.account });
       }).then(function (result) {
         App.showAlertModal('Hai votato!')
       }).catch(function (err) {
@@ -162,7 +162,7 @@ const App = {
 
     return new Promise(resolve => {
       App.contracts.SecureVoting.deployed().then(function (instance) {
-        resolve(instance.hasAlreadyVoted.call(App.account.toLocaleLowerCase()));
+        resolve(instance.hasAlreadyVoted.call(App.account));
       }).catch(function (err) {
         console.log(err.message);
       });
