@@ -162,7 +162,7 @@ const App = {
 
     return new Promise(resolve => {
       App.contracts.SecureVoting.deployed().then(function (instance) {
-        resolve(instance.hasAlreadyVoted.call(App.account));
+        resolve(instance.hasAlreadyVoted.call({from: App.account}));
       }).catch(function (err) {
         console.log(err.message);
       });
@@ -171,11 +171,22 @@ const App = {
   },
 
   checkIfContractCreator: function () {
-    if (App.account.toLocaleLowerCase() == '0x7cb3139f3e40d335efb17ab0081e18885be58265') {
-      $('.show-if-admin').show();
-    } else {
-      $('.show-if-admin').hide();
-    }
+    App.contracts.SecureVoting.deployed().then(function (instance) {
+      return instance.isOwner.call({from: App.account});
+    }).then(function (isOwner) {
+      if (isOwner) {
+        $('.show-if-admin').show();
+      } else {
+        $('.show-if-admin').hide();
+      }
+    }).catch(function (err) {
+      console.log(err.message);
+    })
+    // if (App.account.toLocaleLowerCase() == '0x7cb3139f3e40d335efb17ab0081e18885be58265') {
+    //   $('.show-if-admin').show();
+    // } else {
+    //   $('.show-if-admin').hide();
+    // }
   },
 
   showAlertModal: function (text) {

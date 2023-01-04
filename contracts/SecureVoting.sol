@@ -40,12 +40,10 @@ contract SecureVoting {
     }
 
     struct CandidateDao {
-
         string name;
         string party;
         uint256 votes;
         uint256 uid;
-
     }
 
     // Variabili di stato che vengono salvate sulla Blockchain per il numero di voti totali e il numero di candidati totale.
@@ -96,54 +94,34 @@ contract SecureVoting {
     function getCandidates() public view returns (CandidateDao[] memory) {
         CandidateDao[] memory toBeRet = new CandidateDao[](numCandidates);
         for (uint256 i = 0; i < numCandidates; i++) {
-            toBeRet[i] = CandidateDao(candidates[i].name, candidates[i].party, candidates[i].votes, i);
+            toBeRet[i] = CandidateDao(
+                candidates[i].name,
+                candidates[i].party,
+                candidates[i].votes,
+                i
+            );
         }
         return toBeRet;
     }
 
     // Ritorna tutte le informazioni su un Candidato.
-    // da modificare
     function getCandidate(uint256 candidateID)
         public
         view
-        returns (
-            uint256,
-            string memory,
-            string memory
-        )
+        returns (Candidate memory)
     {
         if (candidates[candidateID].doesExist == true) {
-            return (
-                candidateID,
-                candidates[candidateID].name,
-                candidates[candidateID].party
-            );
+            return candidates[candidateID];
         } else {
             revert("Non esiste nessun candidato con quell'ID.");
         }
     }
 
-    function hasAlreadyVoted(address voterID)
-        public
-        view
-        returns (bool)
-    {
-        return voters[voterID].hasVoted;
+    function hasAlreadyVoted() public view returns (bool) {
+        return voters[msg.sender].hasVoted;
     }
 
-    // function memcmp(bytes memory a, bytes memory b)
-    //     internal
-    //     pure
-    //     returns (bool)
-    // {
-    //     return (a.length == b.length) && (keccak256(a) == keccak256(b));
-    // }
-
-    // function strcmp(string memory a, string memory b)
-    //     internal
-    //     pure
-    //     returns (bool)
-    // {
-    //     return memcmp(bytes(a), bytes(b));
-    // }
+    function isOwner() public view returns (bool) {
+        return msg.sender == owner;
+    }
 }
