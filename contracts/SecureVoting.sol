@@ -34,7 +34,6 @@ contract SecureVoting {
     struct Candidate {
         string name;
         string party;
-        // uint256 uid;
         // Ci assicuriamo che esista davvero.
         bool doesExist;
     }
@@ -56,7 +55,7 @@ contract SecureVoting {
     mapping(uint256 => Candidate) candidates;
     mapping(uint256 => Voter) voters;
 
-    function addCandidate(string memory name, string memory party)
+    function addCandidate(string calldata name, string calldata party)
         public
         onlyOwner
     {
@@ -68,7 +67,7 @@ contract SecureVoting {
         emit AddedCandidate(candidateID);
     }
 
-    function vote(string memory uid, uint256 candidateID) public {
+    function vote(string calldata uid, uint256 candidateID) public {
         // Controlla se esiste il candidato per cui votiamo.
         if (candidates[candidateID].doesExist == true) {
             uint256 voterID = numVoters++; // Numero di voti totale viene aggiornato
@@ -102,9 +101,7 @@ contract SecureVoting {
     function getCandidates() public view returns (CandidateDao[] memory) {
         CandidateDao[] memory toBeRet = new CandidateDao[](numCandidates);
         for (uint256 i = 0; i < numCandidates; i++) {
-            Candidate memory tmp = candidates[i];
-            CandidateDao memory toAdd = CandidateDao(tmp.name, tmp.party, i, totalVotes(i));
-            toBeRet[i] = toAdd;
+            toBeRet[i] = CandidateDao(candidates[i].name, candidates[i].party, i, totalVotes(i));
         }
         return toBeRet;
     }

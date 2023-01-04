@@ -6,32 +6,41 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 
 <body>
     <!-- Inizio body -->
-    <div class="container">
-        <div class="row mt-3">
+    <div class="container w-100 h-100 my-3 px-5">
+        <div class="row mt-4">
             <h1>Secure Voting</h1>
         </div>
-        <div class="row justify-content-center align-items-center my-2">
-            <div class="col px-5">
-                <table id="candidatesTable" class="table">
+        <div class="row text-center d-flex align-items-center justify-content-center my-1"
+            style="overflow:hidden; height:75vh;">
+            <div class="col">
+                <table id="candidatesTable" class="table table-dark table-bordered table-striped"
+                    style="text-align: center;">
+                    <div class="row mb-3 px-1" style="text-align: start;">
+                        <div class="col-8">
+                            <h3>Lista candidati</h3>
+                        </div>
+                        <div class="col text-end">
+                            <button data-bs-toggle="modal" data-bs-target="#addCandidateModal" type="button"
+                                id="addCandidateButton" class="btn btn-primary show-if-admin">
+                                <i class="bi bi-plus-circle-fill"></i>
+                                Aggiungi candidato
+                            </button>
+                        </div>
+                    </div>
                     <thead>
                         <th scope="col">Nome</th>
                         <th scope="col">Partito</th>
                         <th scope="col" class="show-if-admin">Voti</th>
-                        <th class="text-end" scope="col">Azioni</th>
+                        <th scope="col">Azioni</th>
                     </thead>
                     <tbody id="candidatesTableBody">
                     </tbody>
                 </table>
-            </div>
-        </div>
-        <div class="row justify-content-end">
-            <div class="col-4 text-end px-5">
-                <button data-bs-toggle="modal" data-bs-target="#addCandidateModal" type="button" id="addCandidateButton"
-                    class="btn btn-primary show-if-admin">Aggiungi candidato</button>
             </div>
         </div>
     </div>
@@ -55,7 +64,7 @@
                             <input required type="text" class="form-control" id="partitoCandidatoModal">
                         </div>
                         <div class="mb-3">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Annulla</button>
                             <button type="submit" class="btn btn-primary" id="salvaCandidatoButton">Salva</button>
                         </div>
                     </form>

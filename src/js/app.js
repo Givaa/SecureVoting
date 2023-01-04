@@ -71,11 +71,11 @@ const App = {
 
     for (const candidate of candidates) {
 
-      const nameCell = $('<td/>').html(candidate.name)
-      const partyCell = $('<td/>').html(candidate.party);
-      const votesCell = $('<td/>').html(candidate.votes).attr('class', 'show-if-admin');
+      const nameCell = $('<td/>').html(candidate.name).css('vertical-align', 'middle');
+      const partyCell = $('<td/>').html(candidate.party).css('vertical-align', 'middle');
+      const votesCell = $('<td/>').html(candidate.votes).attr('class', 'show-if-admin').css('vertical-align', 'middle');
       const actionCell = $('<td/>')
-        .attr('class', 'text-end')
+        .css('vertical-align', 'middle')
         .html(
           $('<button/>')
             .attr('class', 'btn btn-success btn-adopt')
@@ -112,7 +112,7 @@ const App = {
     App.contracts.SecureVoting.deployed().then(function (instance) {
       return instance.addCandidate(nomeCandidato, partitoCandidato, { from: App.account });
     }).then(function (result) {
-      App.showAlertModal('hai aggiunto un candidato!');
+      App.showAlertModal('Hai aggiunto un candidato!');
     }).catch(function (err) {
       console.log(err.message);
     });
@@ -131,13 +131,13 @@ const App = {
   voteCandidate: async function (candidateId) {
 
     if (await App.checkHasAlreadyVoted()) {
-      App.showAlertModal('hai già votato');
+      App.showAlertModal('Hai già votato');
     } else {
 
       App.contracts.SecureVoting.deployed().then(function (instance) {
         return instance.vote(App.account.toLocaleLowerCase(), candidateId, { from: App.account });
       }).then(function (result) {
-        App.showAlertModal('hai votato!')
+        App.showAlertModal('Hai votato!')
       }).catch(function (err) {
         console.log(err.message);
       });
@@ -162,7 +162,7 @@ const App = {
 
     return new Promise(resolve => {
       App.contracts.SecureVoting.deployed().then(function (instance) {
-        resolve(instance.hasAlreadyVoted.call(App.account));
+        resolve(instance.hasAlreadyVoted.call(App.account.toLocaleLowerCase()));
       }).catch(function (err) {
         console.log(err.message);
       });

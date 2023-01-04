@@ -1,2 +1,4 @@
 node_modules/*
 jsconfig.json
+.DS_Store
+IoT part/.DS_Store
