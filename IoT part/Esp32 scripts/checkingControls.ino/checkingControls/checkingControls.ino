@@ -15,18 +15,18 @@
 
 MFRC522 rfid(SS_PIN, RST_PIN);
 
-const char* ssid = "fast life";
-const char* password = "012345678";
+const char* ssid = "CtOS";
+const char* password = "876543210";
 
-String serverName = "https://192.168.1.149:222";
+String serverName = "https://192.168.1.153:443";
 
 String actualBlockchainID, actualRFID;
 
 bool state = true;
 
-//WiFiClientSecure client;
-
-/* const char* root_ca = \
+WiFiClientSecure client;
+ 
+const char* root_ca = \
 "-----BEGIN CERTIFICATE-----\n" \
 "MIIFqDCCA5ACCQCPfRsdFhNh+zANBgkqhkiG9w0BAQsFADCBlTELMAkGA1UEBhMC\n" \
 "SVQxETAPBgNVBAgMCEF2ZWxsaW5vMREwDwYDVQQHDAhBdmVsbGlubzEVMBMGA1UE\n" \
@@ -59,7 +59,7 @@ bool state = true;
 "WmiK4TYDPBJ6wtW99yZ8q0/kBpw2SL+JWwa0gabx/oTqRQJy9n8jYQV6wY21kKkg\n" \
 "eXToLH0iVick1S9p7zEM3yqLZBtGIekUUUPY8ZKccl3w+nXOrURPS9I97cX0AU4I\n" \
 "AxGz6Lnx0X5moDFG\n"
-"-----END CERTIFICATE-----\n";*/
+"-----END CERTIFICATE-----\n";
        
 
 int firstLastState = LOW, secondLastState = LOW, thirdLastState = LOW, fourthLastState = LOW;
@@ -81,7 +81,7 @@ void setup() {
   digitalWrite(GREEN_LED, HIGH);
   delay(LED_TIMING);
   digitalWrite(GREEN_LED, LOW);
-  //client.setCACert(root_ca);
+  client.setCACert(root_ca);
   Serial.println(WiFi.localIP());
 
   pinMode(FIRST_BUTTON, INPUT_PULLUP);
@@ -119,11 +119,13 @@ void loop() {
 
 bool isConnectedGanache(){
   if(WiFi.status()== WL_CONNECTED){
+
       HTTPClient http;
 
       String serverPath = serverName + "/isConnected";
       
       http.begin(serverPath.c_str()/*, root_ca*/);
+      http.addHeader("Authorization", "Bearer test");
       
       int httpResponseCode = http.GET();
       
@@ -179,6 +181,7 @@ void voteForPost(String uid, int candidateID){
       http.begin(serverPath.c_str()/*, root_ca*/);
 
       http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+      http.addHeader("Authorization", "Bearer test");
 
       String httpRequestData = "uid=" + uid + "&RFID=" + actualRFID + "&candidateID=" + String(candidateID);
 
@@ -234,6 +237,7 @@ void authenticate(){
           http.begin(serverPath.c_str()/*, root_ca*/);
 
           http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+          http.addHeader("Authorization", "Bearer test");
 
           String httpRequestData = "RFID=" + actualRFID;
 
