@@ -11,7 +11,7 @@ with open("SecureVoting.json") as f:
 abi = info_json["abi"]
 
 # Inizialize the smart contract based on its address
-secureVotingAddress = "0x6A9fe24BE14e2C564d416CfF7a293D6B24AbBC2e"
+secureVotingAddress = "0x42d8E580c1b85b22cAF716b794cAccA036254533"
 contract = w3.eth.contract(address=secureVotingAddress, abi=abi)
 
 # Takes the first account, the one who deployed the Smart Contract and the only one

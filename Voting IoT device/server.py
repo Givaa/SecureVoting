@@ -31,7 +31,7 @@ abi = info_json["abi"]
 
 # Inizialize the smart contract based on its address
 # secureVotingAddress = "0x511c95B2cf0d2b24b7eD948dAC1f9b27A2b1cE1d"
-secureVotingAddress = "0x6A9fe24BE14e2C564d416CfF7a293D6B24AbBC2e"
+secureVotingAddress = "0x42d8E580c1b85b22cAF716b794cAccA036254533"
 contract = w3.eth.contract(address=secureVotingAddress, abi=abi)
 
 # This function controls if the request has the secret shared token and it's performed before each function
