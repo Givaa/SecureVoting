@@ -121,7 +121,7 @@ void setup() {
   rfid.PCD_Init();
 
   // Controls if Ganache is connected with the Flask Webserver
-  if(isConnectedGanache() == true){
+  if(isConnectedGanache()){
     
     // Turns on Green Led on success
     Serial.println("ESP32 connected with Ganache");
@@ -156,7 +156,7 @@ bool isConnectedGanache(){
 
       // There we forge the HTTPS GET
       HTTPClient https;
-      String serverPath = serverName + "/isConnected";
+      String serverPath = serverName + "/isConnectedGanache";
       https.begin(client, serverPath.c_str());
 
       // We add this token called "Authorization" because in the back-end of the webserver only

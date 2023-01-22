@@ -10,6 +10,7 @@ data = {
 
 response = requests.post(url, data=data, verify=False)
 
+print(response.text)
 print("Status Code", response.status_code)
 
 
