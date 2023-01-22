@@ -306,7 +306,6 @@ void authenticate(){
           // If OK then read the payload
           if (httpsResponseCode == 200) {
             String payload = https.getString();
-            Serial.println(payload);
 
             // Assign the Blockchain ID given by the Flask Web Server
             actualBlockchainID = payload;
