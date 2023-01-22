@@ -3,6 +3,8 @@
 #include <HTTPClient.h>
 #include <SPI.h>
 #include <MFRC522.h>
+
+// Define the pin numbers for the buttons and LEDs
 #define FIRST_BUTTON 15
 #define SECOND_BUTTON 13
 #define THIRD_BUTTON 21
@@ -13,19 +15,26 @@
 #define SS_PIN  5 
 #define RST_PIN 4 
 
+// Initialize the MFRC522 RFID reader
 MFRC522 rfid(SS_PIN, RST_PIN);
 
+// WiFi credentials
 const char* ssid = "CtOS";
 const char* password = "876543210";
 
+// Server URL
 String serverName = "https://192.168.1.153:443";
 
+// Variables to store the Blockchain ID and RFID card ID
 String actualBlockchainID, actualRFID;
 
+// State variable to keep track of the voting process switching between auth and vote
 bool state = true;
 
+// Secure WiFi client for the implementation of HTTPS
 WiFiClientSecure client;
  
+// Root CA Certificate
 const char* root_ca = \
 "-----BEGIN CERTIFICATE-----\n" \
 "MIIFqDCCA5ACCQCPfRsdFhNh+zANBgkqhkiG9w0BAQsFADCBlTELMAkGA1UEBhMC\n" \
@@ -60,14 +69,22 @@ const char* root_ca = \
 "eXToLH0iVick1S9p7zEM3yqLZBtGIekUUUPY8ZKccl3w+nXOrURPS9I97cX0AU4I\n" \
 "AxGz6Lnx0X5moDFG\n"
 "-----END CERTIFICATE-----\n";
-       
 
+// That's the token that the Arduino will use to comunicate with the Flask Web Server
+// With this, only the Arduino can communicate and vote
+// It's a bad practice to hard code this, but the memory of the Arduino is almost full and JWT for Arduino is discontinued
+String secureToken = "R3,u=t?_~LRrPycS";
+       
+// States of the buttons
 int firstLastState = LOW, secondLastState = LOW, thirdLastState = LOW, fourthLastState = LOW;
 int firstCurrentState, secondCurrentState, thirdCurrentState, fourthCurrentState;
 
 void setup() {
+
+  // Setting up the Baud rate
   Serial.begin(9600); 
 
+  // Inizializing the WiFi Connection
   WiFi.begin(ssid, password);
   Serial.println("Connecting");
   while(WiFi.status() != WL_CONNECTED) {
@@ -78,12 +95,20 @@ void setup() {
   }
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
+
+  // Turn the Green Led on success
   digitalWrite(GREEN_LED, HIGH);
   delay(LED_TIMING);
   digitalWrite(GREEN_LED, LOW);
+
+  // Setting the CA Certificate for HTTPS, client.setInsecure() because the cert is self-generated and not really certified
   client.setCACert(root_ca);
+  client.setInsecure();
+
+  // Print the local IP
   Serial.println(WiFi.localIP());
 
+  // Set the pins
   pinMode(FIRST_BUTTON, INPUT_PULLUP);
   pinMode(SECOND_BUTTON, INPUT_PULLUP);
   pinMode(THIRD_BUTTON, INPUT_PULLUP);
@@ -91,17 +116,22 @@ void setup() {
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
 
+  // Set RFID 
   SPI.begin();
   rfid.PCD_Init();
 
-  //controlla connessione con il webserver Flask e controlla che Flask sia connesso correttamente con Ganache
+  // Controls if Ganache is connected with the Flask Webserver
   if(isConnectedGanache() == true){
-    Serial.println("ESP32 connesso con Ganache e pronto a far votare!");
+    
+    // Turns on Green Led on success
+    Serial.println("ESP32 connected with Ganache");
     digitalWrite(GREEN_LED, HIGH);
     delay(LED_TIMING);
     digitalWrite(GREEN_LED, LOW);
   } else {
-    Serial.println("Errore! Controllare connessione con Ganache!");
+
+    // Turns on Red Led on failure and stops the program
+    Serial.println("Error! Check Ganache connection!");
     digitalWrite(RED_LED, HIGH);
     delay(LED_TIMING);
     digitalWrite(RED_LED, LOW);
@@ -110,6 +140,8 @@ void setup() {
 }
 
 void loop() {
+
+  // Controls if the boolean variable State is True o False, it's implemented like a mutex
   if(state){
     authenticate();
   } else {
@@ -117,30 +149,37 @@ void loop() {
   } 
 }
 
+// This function controls if Ganache is connected to the Flask Web Server by returning a boolean
 bool isConnectedGanache(){
+
   if(WiFi.status()== WL_CONNECTED){
 
-      HTTPClient http;
-
+      // There we forge the HTTPS GET
+      HTTPClient https;
       String serverPath = serverName + "/isConnected";
+      https.begin(client, serverPath.c_str());
+
+      // We add this token called "Authorization" because in the back-end of the webserver only
+      // request with this secret token will be accepted
+      https.addHeader("Authorization", secureToken);
       
-      http.begin(serverPath.c_str()/*, root_ca*/);
-      http.addHeader("Authorization", "Bearer test");
+      // Getting the response code after executing a GET
+      int httpsResponseCode = https.GET();
       
-      int httpResponseCode = http.GET();
-      
-      if (httpResponseCode == 200) {
-        String payload = http.getString();
+      // If OK then read the payload
+      if (httpsResponseCode == 200) {
+        String payload = https.getString();
         if(payload.equals("True")){
           return true;
         }
       }
       else {
         Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
+        Serial.println(httpsResponseCode);
       } 
-  
-      http.end();
+
+      // Close HTTPS connection
+      https.end();
 
     }
     else {
@@ -150,13 +189,16 @@ bool isConnectedGanache(){
     return false;
 }
 
+// This function uses the Blockchain ID took after the authentication to vote
 void vote(String BlockchainID){
 
+  // Setting the states of Buttons
   firstCurrentState = digitalRead(FIRST_BUTTON);
   secondCurrentState = digitalRead(SECOND_BUTTON);
   thirdCurrentState = digitalRead(THIRD_BUTTON);
   fourthCurrentState = digitalRead(FOURTH_BUTTON);
   
+  // Checking if any of them is pressed
   if (firstLastState == HIGH && firstCurrentState == LOW)
     voteForPost(actualBlockchainID, 0);
   else if (secondLastState == HIGH && secondCurrentState == LOW)
@@ -166,30 +208,39 @@ void vote(String BlockchainID){
   else if (fourthLastState == HIGH && fourthCurrentState == LOW)
     voteForPost(actualBlockchainID, 3);
 
+  // Keeping the state of Buttons update
   firstLastState = firstCurrentState;
   secondLastState = secondCurrentState;
   thirdLastState = thirdCurrentState;
   fourthLastState = fourthCurrentState;
 }
 
+// That's the real Vote function that does an HTTPS Post to the Flask Web Server
 void voteForPost(String uid, int candidateID){
   if(WiFi.status()== WL_CONNECTED){
-      HTTPClient http;
 
+      // There we forge the HTTPS POST
+      HTTPClient https;
       String serverPath = serverName + "/vote";
+      https.begin(client, serverPath.c_str());
+      https.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-      http.begin(serverPath.c_str()/*, root_ca*/);
+      // We add this token called "Authorization" because in the back-end of the webserver only
+      // request with this secret token will be accepted
+      https.addHeader("Authorization", secureToken);
 
-      http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-      http.addHeader("Authorization", "Bearer test");
+      // Assemble the data to be sent
+      String httpsRequestData = "uid=" + uid + "&RFID=" + actualRFID + "&candidateID=" + String(candidateID);
 
-      String httpRequestData = "uid=" + uid + "&RFID=" + actualRFID + "&candidateID=" + String(candidateID);
-
-      int httpResponseCode = http.POST(httpRequestData);
+      // Get the response code after executing a POST
+      int httpsResponseCode = https.POST(httpsRequestData);
       
-      if (httpResponseCode == 200) {
-        String payload = http.getString();
+      // If OK then read the payload
+      if (httpsResponseCode == 200) {
+        String payload = https.getString();
         Serial.println(payload);
+
+        // Check if this account has already voted        
         if(!payload.equals("Already Voted!")){
           digitalWrite(GREEN_LED, HIGH);
           delay(LED_TIMING);
@@ -199,28 +250,33 @@ void voteForPost(String uid, int candidateID){
           delay(LED_TIMING);
           digitalWrite(RED_LED, LOW);          
         }
+
+        // Updating the state so we switch to authentication
         state = true;
       }
       else {
         Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
+        Serial.println(httpsResponseCode);
         digitalWrite(RED_LED, HIGH);
         delay(LED_TIMING);
         digitalWrite(RED_LED, LOW);
       }
   
-      http.end();
+      // Close the connection
+      https.end();
     }
     else {
       Serial.println("WiFi Disconnected");
     }
 }
 
+// This function assigns a Blockchain account given a valid RFID ID 
 void authenticate(){
-    if (rfid.PICC_IsNewCardPresent()) { // leggi un nuovo tag RFID
+    if (rfid.PICC_IsNewCardPresent()) { // read a new RFID tag
       if (rfid.PICC_ReadCardSerial()) { 
         char RFID[8] = ""; 
 
+        // Transform the RFID tag to a Char array
         takeRFIDtoCharArray(rfid.uid.uidByte, rfid.uid.size, RFID);
 
         actualRFID = ""; 
@@ -230,39 +286,49 @@ void authenticate(){
         }
 
         if(WiFi.status()== WL_CONNECTED){
-          HTTPClient http;
 
+          // There we forge the HTTPS POST          
+          HTTPClient https;
           String serverPath = serverName + "/authenticate";
+          https.begin(client, serverPath.c_str());
+          https.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-          http.begin(serverPath.c_str()/*, root_ca*/);
+          // We add this token called "Authorization" because in the back-end of the webserver only
+          // request with this secret token will be accepted
+          https.addHeader("Authorization", secureToken);
 
-          http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-          http.addHeader("Authorization", "Bearer test");
+          // Assemble the data to be sent
+          String httpsRequestData = "RFID=" + actualRFID;
 
-          String httpRequestData = "RFID=" + actualRFID;
-
-          int httpResponseCode = http.POST(httpRequestData);
+          // Get the response code after executing a POST
+          int httpsResponseCode = https.POST(httpsRequestData);
       
-          if (httpResponseCode == 200) {
-            String payload = http.getString();
+          // If OK then read the payload
+          if (httpsResponseCode == 200) {
+            String payload = https.getString();
             Serial.println(payload);
+
+            // Assign the Blockchain ID given by the Flask Web Server
             actualBlockchainID = payload;
             digitalWrite(GREEN_LED, HIGH);
             delay(LED_TIMING);
             digitalWrite(GREEN_LED, LOW);
+
+            // Updating the state so we switch to vote
             state = false;
-            return;
           } else {
             Serial.print("Error code: ");
-            Serial.println(httpResponseCode);
+            Serial.println(httpsResponseCode);
             digitalWrite(RED_LED, HIGH);
             delay(LED_TIMING);
             digitalWrite(RED_LED, LOW);
             exit(-1);
           }
-          http.end();
+
+          // Close the connection
+          https.end();
         } else {
-        Serial.println("WiFi Disconnected");
+          Serial.println("WiFi Disconnected");
         }
         rfid.PICC_HaltA();
         rfid.PCD_StopCrypto1(); 
@@ -270,6 +336,7 @@ void authenticate(){
   }
 }
 
+// This function transforms the RFID identifier to a Char Array
 void takeRFIDtoCharArray(byte array[], unsigned int len, char buffer[])
 {
    for (unsigned int i = 0; i < len; i++)

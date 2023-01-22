@@ -15,6 +15,8 @@ DataBase = sqlconnect.connect(
 
 Cursor = DataBase.cursor()
 
+SecureToken = "R3,u=t?_~LRrPycS"
+
 app = Flask(__name__)
 sslify = SSLify(app)
 
@@ -35,14 +37,14 @@ print(contract.functions.getNumOfCandidates().call())
 
 @app.route('/isConnected', methods = ['GET'])
 def isConnected():
-    if request.headers['Authorization'] == "Bearer test":
+    if request.headers['Authorization'] == SecureToken:
         return str(w3.isConnected())
     else:
         return "Errore"
 
 @app.route('/vote', methods = ['POST'])
 def vote():
-    if request.headers['Authorization'] == "Bearer test":
+    if request.headers['Authorization'] == SecureToken:
         payload = request.get_data().decode('utf-8').split('&')
         uid, RFID, candidateid = payload
         uid = uid.split('=')[1]
@@ -66,7 +68,7 @@ def vote():
         return "Errore"
 @app.route('/authenticate', methods = ['POST'])
 def authenticate():
-    if request.headers['Authorization'] == "Bearer test":
+    if request.headers['Authorization'] == SecureToken:
         payload = request.get_data().decode('utf-8')
         RFID = payload.split('=')[1]
         Cursor.execute("SELECT BlockchainID FROM Votante WHERE RFID = (%s)", (RFID,))
