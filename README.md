@@ -14,3 +14,8 @@ Several technologies were used for the implementation, including:
 3. Metamask
 4. Solidity
 5. Web3.js
+
+## Authors
+
+- [@Givaa](https://github.com/Givaa)
+- [@YantCaccia](https://github.com/YantCaccia)
